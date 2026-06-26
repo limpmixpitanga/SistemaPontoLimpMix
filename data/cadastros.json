@@ -15,6 +15,47 @@
       "horarioSaida": "18:00",
       "tolerancia": 10,
       "ativo": true
+    },
+    {
+      "id": 2,
+      "nome": "VICTOR HUGO DE PAULA",
+      "usuario": "VICTOR",
+      "senhaHash": "b70707bf9b67d24d230efc4552950cda7fb15597f8da2baf4cf67843a551c03b",
+      "tipo": "FUNCIONARIO",
+      "funcao": "Vendedor",
+      "setor": "VENDEDOR",
+      "dataAdmissao": "2026-06-26",
+      "horarioEntrada": "08:00",
+      "horarioAlmoco": "12:00",
+      "horarioRetorno": "13:00",
+      "horarioSaida": "18:00",
+      "tolerancia": 10,
+      "ativo": true
+    }
+  ],
+  "configuracoes": {
+    "empresa": "LimpMix Pitanga",
+    "janelaInicio": "07:50",
+    "janelaFim": "18:30"
+  }
+}
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "nome": "Administrador",
+      "usuario": "master",
+      "senhaHash": "e7bc2f973afb8dfaf00fadfb19596741108be08ab4a107c6a799c429b684c64a",
+      "tipo": "MASTER",
+      "funcao": "Administrador",
+      "setor": "Gestao",
+      "dataAdmissao": "2026-06-26",
+      "horarioEntrada": "08:00",
+      "horarioAlmoco": "12:00",
+      "horarioRetorno": "13:00",
+      "horarioSaida": "18:00",
+      "tolerancia": 10,
+      "ativo": true
     }
   ],
   "configuracoes": {
