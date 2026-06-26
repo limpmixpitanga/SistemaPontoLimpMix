@@ -48,6 +48,29 @@ MASTER:
 - Backup/importacao/exportacao.
 - Auditoria.
 
+## E-mail da primeira batida
+
+A primeira batida de ponto do dia tenta enviar automaticamente um e-mail para:
+
+`limpmixpitanga+ponto@gmail.com`
+
+Dados enviados:
+
+- Funcionario.
+- Usuario.
+- Data.
+- Hora.
+- Tipo da batida.
+- Data e hora completa do registro.
+
+Como o sistema roda no GitHub Pages, o envio depende do endpoint configurado em `data/cadastros.json`:
+
+`configuracoes.emailEndpoint`
+
+Por padrao foi configurado um endpoint HTTP sem senha SMTP exposta no navegador.
+Se o provedor do endpoint solicitar confirmacao no primeiro uso, confirme pelo e-mail de destino.
+Se o endpoint falhar, o sistema tenta abrir uma mensagem `mailto:` como fallback.
+
 ## Backup semanal no Drive
 
 O site estatico nao consegue enviar arquivos automaticamente para Google Drive sem backend/OAuth.
@@ -78,4 +101,3 @@ Se a pasta do Drive for outra, edite a variavel `$DestinoDrive` em `scripts/back
    - Branch: `main`
    - Folder: `/root`
 4. A pagina ficara disponivel no endereco informado pelo GitHub Pages.
-
