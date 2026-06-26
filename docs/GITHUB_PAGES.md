@@ -35,3 +35,11 @@ Para atualizar a base do site:
 
 GitHub Pages nao salva alteracoes nos arquivos JSON do repositorio.
 As alteracoes feitas pelo usuario ficam no `localStorage` do navegador ate serem exportadas.
+
+Para manter cadastro e batidas unicos entre navegadores, use o backend em:
+
+`scripts/google-apps-script-backend.gs`
+
+Depois de publicar o Apps Script como App da Web, configure a URL em:
+
+`data/cadastros.json > configuracoes.syncEndpoint`
