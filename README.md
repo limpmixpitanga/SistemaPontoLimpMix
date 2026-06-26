@@ -52,6 +52,12 @@ Para manter cadastro e batidas em uma base unica entre computadores/celulares:
 
 Depois disso, o site passa a carregar e salvar cadastros/registros nesse backend central.
 
+Na primeira sincronizacao, o Apps Script cria uma Planilha Google na pasta do Drive configurada no script:
+
+`Sistema Ponto LimpMix - Registros`
+
+Ela possui abas para `Funcionarios`, `Registros`, `Logs` e `Resumo`. O MASTER tambem ve o botao `Abrir planilha de registros` em `Dados e backup` depois que a primeira sincronizacao carregar o link.
+
 O token padrao e:
 
 `limpmix-ponto-2026`
