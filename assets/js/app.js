@@ -26,7 +26,9 @@ const DEFAULT_STATE = {
       janelaFim: "18:30",
       emailPrimeiraBatida: true,
       emailDestino: "limpmixpitanga+ponto@gmail.com",
-      emailEndpoint: "https://formsubmit.co/ajax/limpmixpitanga+ponto@gmail.com"
+      emailEndpoint: "https://formsubmit.co/ajax/limpmixpitanga+ponto@gmail.com",
+      syncEndpoint: "",
+      syncToken: "limpmix-ponto-2026"
     }
   },
   registros: {
@@ -49,6 +51,8 @@ let currentUser = null;
 let currentView = "ponto";
 let alertBox = null;
 let clockTimer = null;
+let syncTimer = null;
+let isSyncing = false;
 
 const app = document.querySelector("#app");
 
@@ -73,10 +77,22 @@ async function loadState() {
     if (saved) {
       const local = JSON.parse(saved);
       const merged = mergeBaseState(local, { cadastros, registros });
+      const remote = await pullRemoteState(merged);
+      if (remote) {
+        const synced = mergeBaseState(mergeCentralState(merged, remote), { cadastros, registros });
+        saveState(synced, { remote: false });
+        return synced;
+      }
       saveState(merged);
       return merged;
     }
     const loaded = { cadastros, registros };
+    const remote = await pullRemoteState(loaded);
+    if (remote) {
+      const synced = mergeCentralState(loaded, remote);
+      saveState(synced, { remote: false });
+      return synced;
+    }
     saveState(loaded);
     return loaded;
   } catch {
@@ -106,8 +122,114 @@ function mergeBaseState(local, base) {
   return result;
 }
 
-function saveState(nextState = state) {
+function mergeCentralState(local, remote) {
+  const result = local || structuredClone(DEFAULT_STATE);
+  if (!remote?.cadastros || !remote?.registros) return result;
+
+  const byUser = new Map();
+  for (const user of result.cadastros.usuarios || []) byUser.set(String(user.usuario).toLowerCase(), user);
+  for (const user of remote.cadastros.usuarios || []) byUser.set(String(user.usuario).toLowerCase(), user);
+  result.cadastros.usuarios = [...byUser.values()].sort((a, b) => Number(a.id) - Number(b.id));
+
+  const byRecord = new Map();
+  for (const record of result.registros.registros || []) byRecord.set(String(record.id), record);
+  for (const record of remote.registros.registros || []) byRecord.set(String(record.id), record);
+  result.registros.registros = [...byRecord.values()].sort((a, b) => `${a.data} ${a.hora}`.localeCompare(`${b.data} ${b.hora}`));
+
+  const byLog = new Map();
+  for (const log of result.registros.logs || []) byLog.set(String(log.id), log);
+  for (const log of remote.registros.logs || []) byLog.set(String(log.id), log);
+  result.registros.logs = [...byLog.values()].sort((a, b) => String(a.dataHora).localeCompare(String(b.dataHora)));
+
+  result.cadastros.configuracoes = {
+    ...(remote.cadastros.configuracoes || {}),
+    ...(result.cadastros.configuracoes || {})
+  };
+  return result;
+}
+
+function saveState(nextState = state, options = { remote: true }) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+  if (options.remote) queueRemoteSave(nextState);
+}
+
+function syncConfig(source = state) {
+  return source?.cadastros?.configuracoes || {};
+}
+
+function hasSyncEndpoint(source = state) {
+  const endpoint = syncConfig(source).syncEndpoint || "";
+  return endpoint.startsWith("https://") && !endpoint.includes("COLE_URL");
+}
+
+function queueRemoteSave(nextState = state) {
+  if (!hasSyncEndpoint(nextState)) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => pushRemoteState(nextState), 700);
+}
+
+async function pullRemoteState(baseState) {
+  if (!hasSyncEndpoint(baseState)) return null;
+  const cfg = syncConfig(baseState);
+  const url = `${cfg.syncEndpoint}?action=load&token=${encodeURIComponent(cfg.syncToken || "")}`;
+  try {
+    const response = await jsonp(url);
+    return response?.state || response;
+  } catch (error) {
+    console.warn("Falha ao sincronizar dados centrais.", error);
+    return null;
+  }
+}
+
+async function pushRemoteState(nextState = state) {
+  if (!hasSyncEndpoint(nextState) || isSyncing) return;
+  isSyncing = true;
+  const cfg = syncConfig(nextState);
+  try {
+    await fetch(cfg.syncEndpoint, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "save",
+        token: cfg.syncToken || "",
+        state: nextState
+      })
+    });
+  } catch (error) {
+    console.warn("Falha ao salvar dados centrais.", error);
+  } finally {
+    isSyncing = false;
+  }
+}
+
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const callback = `limpmixSync_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+    const separator = url.includes("?") ? "&" : "?";
+    const script = document.createElement("script");
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("Tempo esgotado ao carregar dados centrais."));
+    }, 12000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      script.remove();
+      delete window[callback];
+    }
+
+    window[callback] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Falha ao carregar endpoint de sincronizacao."));
+    };
+    script.src = `${url}${separator}callback=${callback}`;
+    document.head.appendChild(script);
+  });
 }
 
 function render(message) {
@@ -580,9 +702,14 @@ function renderRelatorios(view) {
 }
 
 function renderDados(view) {
+  const cfg = state.cadastros.configuracoes || {};
+  const syncStatus = hasSyncEndpoint()
+    ? `Sincronizacao central ativa: ${escapeHtml(cfg.syncEndpoint)}`
+    : "Sincronizacao central nao configurada. Cadastros e pontos ficam apenas neste navegador.";
   view.innerHTML = `
     <header class="page-header"><div class="page-title"><p class="eyebrow">Dados</p><h1>Backup e restauracao</h1></div></header>
     <section class="panel">
+      <div class="alert ${hasSyncEndpoint() ? "success" : "error"}">${syncStatus}</div>
       <div class="toolbar">
         <button class="btn primary" id="export-all">Exportar backup JSON</button>
         <button class="btn" id="export-cad">Baixar cadastros.json</button>
