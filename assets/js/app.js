@@ -23,7 +23,10 @@ const DEFAULT_STATE = {
     configuracoes: {
       empresa: "LimpMix Pitanga",
       janelaInicio: "07:50",
-      janelaFim: "18:30"
+      janelaFim: "18:30",
+      emailPrimeiraBatida: true,
+      emailDestino: "limpmixpitanga+ponto@gmail.com",
+      emailEndpoint: "https://formsubmit.co/ajax/limpmixpitanga+ponto@gmail.com"
     }
   },
   registros: {
@@ -289,6 +292,7 @@ function renderPonto(view) {
 
 function registerPoint(tipo) {
   const now = new Date();
+  const data = todayISO();
   const hora = now.toTimeString().slice(0, 5);
   const cfg = state.cadastros.configuracoes;
   let justificativa = "";
@@ -299,22 +303,86 @@ function registerPoint(tipo) {
     if (!descricao) return;
     justificativa = `Registro Extraordinario - ${motivo}: ${descricao}`;
   }
+  const isFirstPointOfDay = dayRecords(currentUser.id, data).length === 0;
   const record = {
     id: nextId(state.registros.registros),
     usuarioId: currentUser.id,
-    data: todayISO(),
+    data,
     hora,
     tipo,
     justificativa,
     ip: "",
     criadoEm: new Date().toISOString(),
     editadoEm: "",
-    editadoPor: ""
+    editadoPor: "",
+    emailPrimeiraBatida: ""
   };
   state.registros.registros.push(record);
   addLog(currentUser.usuario, `Registrou ponto: ${pointLabels[tipo]}`);
   saveState();
+  if (isFirstPointOfDay) sendFirstPointEmail(record);
   render({ type: "success", text: `${pointLabels[tipo]} registrada com sucesso.` });
+}
+
+async function sendFirstPointEmail(record) {
+  const cfg = state.cadastros.configuracoes || {};
+  if (!cfg.emailPrimeiraBatida || !cfg.emailDestino) return;
+
+  const payload = {
+    _subject: "Registro de Ponto - Primeira batida do dia",
+    _template: "table",
+    _captcha: "false",
+    Empresa: cfg.empresa || "LimpMix Pitanga",
+    Funcionario: currentUser.nome,
+    Usuario: currentUser.usuario,
+    Data: formatDate(record.data),
+    Hora: record.hora,
+    Tipo: pointLabels[record.tipo] || record.tipo,
+    "Data e hora do registro": formatDateTime(record.criadoEm),
+    Justificativa: record.justificativa || "-"
+  };
+
+  try {
+    if (!cfg.emailEndpoint) throw new Error("Endpoint de e-mail nao configurado.");
+    const response = await fetch(cfg.emailEndpoint, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
+    record.emailPrimeiraBatida = "enviado";
+    addLog("sistema", `E-mail da primeira batida enviado para ${cfg.emailDestino}`);
+  } catch (error) {
+    record.emailPrimeiraBatida = "falha";
+    addLog("sistema", `Falha no e-mail automatico da primeira batida: ${error.message || error}`);
+    openEmailFallback(payload);
+  }
+  saveState();
+}
+
+function openEmailFallback(payload) {
+  const cfg = state.cadastros.configuracoes || {};
+  const subject = encodeURIComponent(payload._subject);
+  const body = encodeURIComponent(
+    [
+      `Funcionario: ${payload.Funcionario}`,
+      `Usuario: ${payload.Usuario}`,
+      `Data: ${payload.Data}`,
+      `Hora: ${payload.Hora}`,
+      `Tipo: ${payload.Tipo}`,
+      `Data e hora do registro: ${payload["Data e hora do registro"]}`,
+      `Justificativa: ${payload.Justificativa}`
+    ].join("\n")
+  );
+  const anchor = document.createElement("a");
+  anchor.href = `mailto:${cfg.emailDestino}?subject=${subject}&body=${body}`;
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
 }
 
 function renderFuncionarios(view) {
