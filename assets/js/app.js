@@ -62,19 +62,45 @@ async function boot() {
 
 async function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) return JSON.parse(saved);
   try {
     const [cadastros, registros] = await Promise.all([
       fetch("data/cadastros.json").then((r) => r.json()),
       fetch("data/registros.json").then((r) => r.json())
     ]);
+    if (saved) {
+      const local = JSON.parse(saved);
+      const merged = mergeBaseState(local, { cadastros, registros });
+      saveState(merged);
+      return merged;
+    }
     const loaded = { cadastros, registros };
     saveState(loaded);
     return loaded;
   } catch {
+    if (saved) return JSON.parse(saved);
     saveState(DEFAULT_STATE);
     return structuredClone(DEFAULT_STATE);
   }
+}
+
+function mergeBaseState(local, base) {
+  const result = local || structuredClone(DEFAULT_STATE);
+  result.cadastros ||= { usuarios: [], configuracoes: {} };
+  result.registros ||= { registros: [], logs: [] };
+  result.cadastros.usuarios ||= [];
+  result.registros.registros ||= [];
+  result.registros.logs ||= [];
+  result.cadastros.configuracoes = {
+    ...(base.cadastros?.configuracoes || {}),
+    ...(result.cadastros.configuracoes || {})
+  };
+  for (const baseUser of base.cadastros?.usuarios || []) {
+    const exists = result.cadastros.usuarios.some(
+      (user) => String(user.usuario).toLowerCase() === String(baseUser.usuario).toLowerCase()
+    );
+    if (!exists) result.cadastros.usuarios.push(baseUser);
+  }
+  return result;
 }
 
 function saveState(nextState = state) {
@@ -134,7 +160,9 @@ async function login(event) {
   const form = new FormData(event.target);
   const usuario = String(form.get("usuario") || "").trim();
   const senhaHash = await sha256(String(form.get("senha") || ""));
-  const user = state.cadastros.usuarios.find((item) => item.usuario === usuario && item.senhaHash === senhaHash && item.ativo);
+  const user = state.cadastros.usuarios.find(
+    (item) => String(item.usuario).toLowerCase() === usuario.toLowerCase() && item.senhaHash === senhaHash && item.ativo
+  );
   if (!user) {
     renderLogin({ type: "error", text: "Usuario ou senha invalidos." });
     return;
@@ -342,7 +370,7 @@ async function saveUser(event, userId) {
   event.preventDefault();
   const form = new FormData(event.target);
   const usuario = String(form.get("usuario") || "").trim();
-  if (state.cadastros.usuarios.some((u) => u.usuario === usuario && u.id !== userId)) {
+  if (state.cadastros.usuarios.some((u) => String(u.usuario).toLowerCase() === usuario.toLowerCase() && u.id !== userId)) {
     showAlert({ type: "error", text: "Este usuario ja existe." });
     return;
   }
