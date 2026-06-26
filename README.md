@@ -23,13 +23,40 @@ Arquivos base:
 - `data/registros.json`
 
 Importante: GitHub Pages e um site estatico. Ele nao consegue gravar diretamente nos arquivos `data/*.json`.
-Por isso, o sistema carrega os JSON iniciais e salva as alteracoes no navegador usando `localStorage`.
+Sem sincronizacao central, o sistema salva alteracoes somente no navegador usando `localStorage`.
+Para cadastro e batidas aparecerem em outros navegadores, configure o backend em Google Apps Script.
 
 No menu MASTER `Dados e backup`, use:
 
 - `Exportar backup JSON` para baixar todos os dados atuais.
 - `Baixar cadastros.json` e `Baixar registros.json` para substituir os arquivos da pasta `data` quando quiser publicar uma base atualizada.
 - `Importar backup JSON` para restaurar dados no navegador.
+
+## Sincronizacao central obrigatoria
+
+Para manter cadastro e batidas em uma base unica entre computadores/celulares:
+
+1. Abra [script.google.com](https://script.google.com).
+2. Crie um novo projeto.
+3. Cole o conteudo de `scripts/google-apps-script-backend.gs`.
+4. Clique em `Implantar > Nova implantacao`.
+5. Tipo: `App da Web`.
+6. Executar como: `Eu`.
+7. Quem pode acessar: `Qualquer pessoa`.
+8. Copie a URL do app da Web.
+9. Cole essa URL em `data/cadastros.json`, no campo:
+
+`configuracoes.syncEndpoint`
+
+10. Envie o `data/cadastros.json` atualizado para o GitHub.
+
+Depois disso, o site passa a carregar e salvar cadastros/registros nesse backend central.
+
+O token padrao e:
+
+`limpmix-ponto-2026`
+
+Se alterar o token no Apps Script, altere tambem `configuracoes.syncToken`.
 
 ## Permissoes
 
