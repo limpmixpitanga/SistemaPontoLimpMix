@@ -53,6 +53,7 @@ let alertBox = null;
 let clockTimer = null;
 let syncTimer = null;
 let isSyncing = false;
+let spreadsheetUrl = localStorage.getItem("limpmix-spreadsheet-url") || "";
 
 const app = document.querySelector("#app");
 
@@ -174,11 +175,18 @@ async function pullRemoteState(baseState) {
   const url = `${cfg.syncEndpoint}?action=load&token=${encodeURIComponent(cfg.syncToken || "")}`;
   try {
     const response = await jsonp(url);
+    rememberSpreadsheetUrl(response);
     return response?.state || response;
   } catch (error) {
     console.warn("Falha ao sincronizar dados centrais.", error);
     return null;
   }
+}
+
+function rememberSpreadsheetUrl(response) {
+  if (!response?.spreadsheetUrl) return;
+  spreadsheetUrl = response.spreadsheetUrl;
+  localStorage.setItem("limpmix-spreadsheet-url", spreadsheetUrl);
 }
 
 async function pushRemoteState(nextState = state) {
@@ -706,10 +714,14 @@ function renderDados(view) {
   const syncStatus = hasSyncEndpoint()
     ? `Sincronizacao central ativa: ${escapeHtml(cfg.syncEndpoint)}`
     : "Sincronizacao central nao configurada. Cadastros e pontos ficam apenas neste navegador.";
+  const sheetLink = spreadsheetUrl
+    ? `<a class="btn green" href="${escapeAttr(spreadsheetUrl)}" target="_blank" rel="noopener">Abrir planilha de registros</a>`
+    : `<span class="muted">A planilha do Google aparece aqui apos a primeira sincronizacao com o Apps Script.</span>`;
   view.innerHTML = `
     <header class="page-header"><div class="page-title"><p class="eyebrow">Dados</p><h1>Backup e restauracao</h1></div></header>
     <section class="panel">
       <div class="alert ${hasSyncEndpoint() ? "success" : "error"}">${syncStatus}</div>
+      <div class="toolbar">${sheetLink}</div>
       <div class="toolbar">
         <button class="btn primary" id="export-all">Exportar backup JSON</button>
         <button class="btn" id="export-cad">Baixar cadastros.json</button>
