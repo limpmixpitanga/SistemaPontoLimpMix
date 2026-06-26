@@ -39,6 +39,8 @@
     "janelaFim": "18:30",
     "emailPrimeiraBatida": true,
     "emailDestino": "limpmixpitanga+ponto@gmail.com",
-    "emailEndpoint": "https://formsubmit.co/ajax/limpmixpitanga+ponto@gmail.com"
+    "emailEndpoint": "https://formsubmit.co/ajax/limpmixpitanga+ponto@gmail.com",
+    "syncEndpoint": "",
+    "syncToken": "limpmix-ponto-2026"
   }
 }
