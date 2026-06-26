@@ -36,6 +36,9 @@
   "configuracoes": {
     "empresa": "LimpMix Pitanga",
     "janelaInicio": "07:50",
-    "janelaFim": "18:30"
+    "janelaFim": "18:30",
+    "emailPrimeiraBatida": true,
+    "emailDestino": "limpmixpitanga+ponto@gmail.com",
+    "emailEndpoint": "https://formsubmit.co/ajax/limpmixpitanga+ponto@gmail.com"
   }
 }
