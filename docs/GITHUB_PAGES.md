@@ -43,3 +43,5 @@ Para manter cadastro e batidas unicos entre navegadores, use o backend em:
 Depois de publicar o Apps Script como App da Web, configure a URL em:
 
 `data/cadastros.json > configuracoes.syncEndpoint`
+
+O mesmo Apps Script tambem cria/atualiza uma Planilha Google na pasta do Drive configurada no script. A planilha se chama `Sistema Ponto LimpMix - Registros` e mostra as abas `Funcionarios`, `Registros`, `Logs` e `Resumo`.
