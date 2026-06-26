@@ -39,29 +39,3 @@
     "janelaFim": "18:30"
   }
 }
-{
-  "usuarios": [
-    {
-      "id": 1,
-      "nome": "Administrador",
-      "usuario": "master",
-      "senhaHash": "e7bc2f973afb8dfaf00fadfb19596741108be08ab4a107c6a799c429b684c64a",
-      "tipo": "MASTER",
-      "funcao": "Administrador",
-      "setor": "Gestao",
-      "dataAdmissao": "2026-06-26",
-      "horarioEntrada": "08:00",
-      "horarioAlmoco": "12:00",
-      "horarioRetorno": "13:00",
-      "horarioSaida": "18:00",
-      "tolerancia": 10,
-      "ativo": true
-    }
-  ],
-  "configuracoes": {
-    "empresa": "LimpMix Pitanga",
-    "janelaInicio": "07:50",
-    "janelaFim": "18:30"
-  }
-}
-
